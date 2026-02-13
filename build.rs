@@ -122,7 +122,30 @@ fn is_static_build() -> bool {
     }
 }
 
+/// Overrides the minimum CMake version from the Opus C Library.
+///
+/// Upstream specifies `cmake_minimum_required(VERSION 3.1)`, preventing the library from building
+/// on systems requiring >=3.5.
+/// It is simpler to dynamically patch it here than forking the Opus repository.
+fn patch_opus_cmake_version() {
+    let cmake_path = Path::new("opus/CMakeLists.txt");
+
+    let content = std::fs::read_to_string(cmake_path)
+        .unwrap_or_else(|e| panic!("Failed to read {}: {}", cmake_path.display(), e));
+
+    let patched_content = content.replace(
+        "cmake_minimum_required(VERSION 3.1)",
+        "cmake_minimum_required(VERSION 3.5)",
+    );
+
+    std::fs::write(cmake_path, patched_content)
+        .unwrap_or_else(|e| panic!("Failed to write to {}: {}", cmake_path.display(), e));
+}
+
 fn main() {
+
+    patch_opus_cmake_version();
+
     #[cfg(feature = "generate_binding")]
     generate_binding();
 
